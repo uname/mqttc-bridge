@@ -7,6 +7,7 @@
 #include "config.h"
 #include "client.h"
 #include "net_utils.h"
+#include "log.h"
 
 #include <time.h>
 #include <stdio.h>
@@ -54,19 +55,19 @@ static void onConnect(Mqtt *pstMqtt, void *data, int state)
 	switch(state)
     {
 	case MQTT_STATE_CONNECTING:
-		printf("mqttc is connecting to %s:%d...\n", pstMqtt->server, pstMqtt->port);
+		LOG_D("connecting to %s:%d...\n", pstMqtt->server, pstMqtt->port);
 		break;
         
 	case MQTT_STATE_CONNECTED:
-		printf("mqttc is connected.\n");
+		LOG_I("connected.\n");
 		break;
         
 	case MQTT_STATE_DISCONNECTED:
-		printf("mqttc is disconnected.\n");
+		LOG_W("disconnected.\n");
 		break;
         
 	default:
-		printf("mqttc is in badstate.\n");
+		LOG_W("it's in badstate.\n");
 	}
 }
 
@@ -75,32 +76,32 @@ static void onPublish(Mqtt *pstMqtt, void *data, int msgId)
 	(void)pstMqtt;
 	(void)msgId;
 	MqttMsg *msg = (MqttMsg *)data;
-	printf("publish to %s: %s\n", msg->topic, msg->payload);
+	LOG_D("publish to %s: %s\n", msg->topic, msg->payload);
 }
 
 static void onSubscribe(Mqtt *pstMqtt, void *data, int msgId)
 {
     (void)pstMqtt;
 	char *topic = (char *)data;
-	printf("subscribe to %s: msgId=%d\n", topic, msgId);
+	LOG_D("subscribe to %s: msgId=%d\n", topic, msgId);
 }
 
 static void onSuback(Mqtt *pstMqtt, void *data, int msgId)
 {
 	(void)pstMqtt;
 	(void)data;
-	printf("received suback: msgId=%d\n", msgId);
+	LOG_D("received suback: msgId=%d\n", msgId);
 }
 
 static void onMessage(Mqtt *pstMqtt, MqttMsg *message)
 {
-    printf("received message: topic=%s, payload=%s\n", message->topic, message->payload);
+    LOG_I("received message: topic=%s, payload=%s\n", message->topic, message->payload);
     easyMqttPublish(pstMqtt, "apache99", "HiApache!!", 0);
 }
 
 static void onDisconnect(Mqtt *pstMqtt, void *data, int id)
 {
-    fprintf(stderr, "Disconnected\n");
+    LOG_W("disconnected\n");
 }
 
 static void setMqttCallbacks(Mqtt *pstMqtt)
@@ -134,6 +135,8 @@ static void setMqttCallbacks(Mqtt *pstMqtt)
 
 int main(int argc, char **argv)
 {
+    LOG_SET_LEVEL(LOG_DEBUG);
+    
     srand(time(NULL) ^ getpid());
     
     initClient(&client);
@@ -142,11 +145,11 @@ int main(int argc, char **argv)
     
     if(mqttConnect(client.mqtt) != 0)
     {
-        fprintf(stderr, "Connect failed\n");
+        LOG_E("connect failed");
         exit(1);
     }
     
-    DEBUG_PRINT("Connect %s:%d success\n", HOST, PORT);
+    LOG_I("connect %s:%d success", HOST, PORT);
     
     mqttLoop(client.mqtt);
         
