@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <assert.h>
 
 #define MQTT_BUFFER_SIZE   1024
 #define KEEPALIVE          300
@@ -102,7 +103,7 @@ static void mqttSendConnect(Mqtt *pstMqtt)
 	free(buffer);
 }
 
-static void mqttSendSubscribe(Mqtt *pstMqtt, int msgid, const char *topic, uint8_t qos)
+static void mqttSendSubscribe(Mqtt *pstMqtt, int msgId, const char *topic, uint8_t qos)
 {
 	int len = 0;
 	char *ptr, *buffer;
@@ -112,7 +113,7 @@ static void mqttSendSubscribe(Mqtt *pstMqtt, int msgid, const char *topic, uint8
 
 	uint8_t header = SETQOS(SUBSCRIBE, MQTT_QOS1);
 
-	len += 2; //msgid
+	len += 2; //msgId
 	len += 2 + strlen(topic) + 1; //topic and qos
 
 	remaining_count = _encode_remaining_length(remaining_length, len);
@@ -120,10 +121,50 @@ static void mqttSendSubscribe(Mqtt *pstMqtt, int msgid, const char *topic, uint8
 	
 	_write_header(&ptr, header);
 	_write_remaining_length(&ptr, remaining_length, remaining_count);
-	_write_int(&ptr, msgid);
+	_write_int(&ptr, msgId);
 	_write_string(&ptr, topic);
 	_write_char(&ptr, qos);
 
+	write(pstMqtt->fd, buffer, ptr-buffer);
+
+	free(buffer);
+}
+
+static void mqttSendPublish(Mqtt *pstMqtt, MqttMsg *msg)
+{
+	int len = 0;
+	char *ptr, *buffer;
+	char remaining_length[4];
+	int remaining_count;
+
+	uint8_t header = PUBLISH;
+	header = SETRETAIN(header, msg->retain);
+	header = SETQOS(header, msg->qos);
+	header = SETDUP(header, msg->dup);
+
+	len += 2 + strlen(msg->topic);
+
+	if(msg->qos > MQTT_QOS0) len += 2; //msgId
+
+	if(msg->payload) len += msg->payloadlen;
+	
+	remaining_count = _encode_remaining_length(remaining_length, len);
+	
+	ptr = buffer = malloc(1 + remaining_count + len);
+    assert(ptr != NULL);
+
+	_write_header(&ptr, header);
+	_write_remaining_length(&ptr, remaining_length, remaining_count);
+	_write_string(&ptr, msg->topic);
+	if(msg->qos > MQTT_QOS0)
+    {
+		_write_int(&ptr, msg->id);
+	}
+	if(msg->payload)
+    {
+		_write_payload(&ptr, msg->payload, msg->payloadlen);
+	}
+    
 	write(pstMqtt->fd, buffer, ptr-buffer);
 
 	free(buffer);
@@ -194,25 +235,19 @@ static void mqttHandlePublish(Mqtt *pstMqtt, MqttMsg *msg)
     free(msg);
 }
 
-static void mqttHandleSuback(Mqtt *pstMqtt, int msgid, int qos)
+static void mqttHandlePuback(Mqtt *pstMqtt, int type, int msgId)
 {
-	(void)qos;
-	mqttCallback(pstMqtt, SUBACK, NULL, msgid);
+	if(type == PUBREL)
+    {
+		//mqtt_pubcomp(mqtt, msgId);
+	}
+	mqttCallback(pstMqtt, type, NULL, msgId);
 }
 
-static MqttMsg * mqtt_msg_new(int msgid, int qos, bool retain, bool dup, 
-			                  char *topic, int payloadlen, char *payload)
+static void mqttHandleSuback(Mqtt *pstMqtt, int msgId, int qos)
 {
-	MqttMsg *msg = malloc(sizeof(MqttMsg));
-	msg->id = msgid;
-	msg->qos = qos;
-	msg->retain = retain;
-	msg->dup = dup;
-	msg->topic = topic;
-	msg->payloadlen = payloadlen;
-	msg->payload = payload;
-    
-	return msg;
+	(void)qos;
+	mqttCallback(pstMqtt, SUBACK, NULL, msgId);
 }
 
 /**
@@ -220,7 +255,7 @@ static MqttMsg * mqtt_msg_new(int msgid, int qos, bool retain, bool dup,
 */
 static void mqttHandlePacket(Mqtt *mqtt, uint8_t header, char *buffer, int buflen)
 {
-	int qos, msgid=0;
+	int qos, msgId=0;
 	bool retain, dup;
 	int topiclen = 0;
 	char *topic = NULL;
@@ -243,34 +278,34 @@ static void mqttHandlePacket(Mqtt *mqtt, uint8_t header, char *buffer, int bufle
 		payloadlen -= (2+topiclen);
 		if( qos > 0)
         {
-			msgid = _read_int(&buffer);
+			msgId = _read_int(&buffer);
 			payloadlen -= 2;
 		}
 		payload = malloc(payloadlen+1);
 		memcpy(payload, buffer, payloadlen);
 		payload[payloadlen] = '\0';
-		msg = mqtt_msg_new(msgid, qos, retain, dup, topic, payloadlen, payload);
+		msg = makeMqttMsg(msgId, qos, retain, dup, topic, payloadlen, payload);
 		mqttHandlePublish(mqtt, msg);
 		break;
-    /*
+
         
 	case PUBACK:
 	case PUBREC:
 	case PUBREL:
 	case PUBCOMP:
-		msgid = _read_int(&buffer);
-		_mqtt_handle_puback(mqtt, type, msgid);
+		msgId = _read_int(&buffer);
+		mqttHandlePuback(mqtt, type, msgId);
 		break;
-    */
+    
 	case SUBACK:
-		msgid = _read_int(&buffer);
+		msgId = _read_int(&buffer);
 		qos = _read_char(&buffer);
-		mqttHandleSuback(mqtt, msgid, qos);
+		mqttHandleSuback(mqtt, msgId, qos);
 		break;
     /*  
 	case UNSUBACK:
-		msgid = _read_int(&buffer);
-		_mqtt_handle_unsuback(mqtt, msgid);
+		msgId = _read_int(&buffer);
+		_mqtt_handle_unsuback(mqtt, msgId);
 		break;
         
 	case PINGRESP:
@@ -373,7 +408,42 @@ int mqttSubscribe(Mqtt *pstMqtt, const char *topic, unsigned char qos)
 	int msgId = pstMqtt->msgId++;
 	mqttSendSubscribe(pstMqtt, msgId, topic, qos);
 	mqttCallback(pstMqtt, SUBSCRIBE, (void *)topic, msgId);
+    
     return msgId;
+}
+
+//PUBLISH
+int mqttPublish(Mqtt *pstMqtt, MqttMsg *msg)
+{
+	if(msg->id == 0)
+    {
+		msg->id = pstMqtt->msgId++;
+	}
+	mqttSendPublish(pstMqtt, msg);
+	mqttCallback(pstMqtt, PUBLISH, msg, msg->id);
+    
+	return msg->id;
+}
+
+int easyMqttPublish(Mqtt *pstMqtt, char *topic, char *payload, int qos)
+{
+    MqttMsg *msg = makeMqttMsg(0, qos, false, false, topic, strlen(payload), payload);
+    return mqttPublish(pstMqtt, msg);
+}
+
+MqttMsg *makeMqttMsg(int msgId, int qos, bool retain, bool dup, 
+			         char *topic, int payloadlen, char *payload)
+{
+	MqttMsg *msg = malloc(sizeof(MqttMsg));
+	msg->id = msgId;
+	msg->qos = qos;
+	msg->retain = retain;
+	msg->dup = dup;
+	msg->topic = topic;
+	msg->payloadlen = payloadlen;
+	msg->payload = payload;
+    
+	return msg;
 }
 
 void mqttLoop(Mqtt *pstMqtt)

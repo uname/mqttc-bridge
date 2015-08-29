@@ -75,7 +75,12 @@ void mqttLoop(Mqtt *pstMqtt);
 void mqttSetState(Mqtt *pstMqtt, int state);
 void mqttSetCallback(Mqtt *pstMqtt, uint8_t type, MqttCallback callback);
 
+int easyMqttPublish(Mqtt *pstMqtt, char *topic, char *payload, int qos);
+int mqttPublish(Mqtt *pstMqtt, MqttMsg *msg);
 int mqttSubscribe(Mqtt *pstMqtt, const char *topic, unsigned char qos);
+
+MqttMsg *makeMqttMsg(int msgId, int qos, bool retain, bool dup, 
+			         char *topic, int payloadlen, char *payload);
 
 #endif
 

@@ -70,23 +70,32 @@ static void onConnect(Mqtt *pstMqtt, void *data, int state)
 	}
 }
 
-static void onSubscribe(Mqtt *pstMqtt, void *data, int msgid)
+static void onPublish(Mqtt *pstMqtt, void *data, int msgId)
+{
+	(void)pstMqtt;
+	(void)msgId;
+	MqttMsg *msg = (MqttMsg *)data;
+	printf("publish to %s: %s\n", msg->topic, msg->payload);
+}
+
+static void onSubscribe(Mqtt *pstMqtt, void *data, int msgId)
 {
     (void)pstMqtt;
 	char *topic = (char *)data;
-	printf("subscribe to %s: msgid=%d\n", topic, msgid);
+	printf("subscribe to %s: msgId=%d\n", topic, msgId);
 }
 
-static void onSuback(Mqtt *pstMqtt, void *data, int msgid)
+static void onSuback(Mqtt *pstMqtt, void *data, int msgId)
 {
 	(void)pstMqtt;
 	(void)data;
-	printf("received suback: msgid=%d\n", msgid);
+	printf("received suback: msgId=%d\n", msgId);
 }
 
 static void onMessage(Mqtt *pstMqtt, MqttMsg *message)
 {
     printf("received message: topic=%s, payload=%s\n", message->topic, message->payload);
+    easyMqttPublish(pstMqtt, "apache99", "HiApache!!", 0);
 }
 
 static void onDisconnect(Mqtt *pstMqtt, void *data, int id)
@@ -102,7 +111,7 @@ static void setMqttCallbacks(Mqtt *pstMqtt)
 		NULL,
 		onConnect,
 		NULL, //onConnack,
-		NULL, //onPublish,
+		onPublish,
 		NULL, //onPuback,
 		NULL, //onPubrec,
 		NULL, //onPubrel,
