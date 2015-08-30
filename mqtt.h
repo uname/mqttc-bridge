@@ -70,7 +70,7 @@ struct tagMqtt {
 Mqtt *mqttNew(void);
 void mqttSetServer(Mqtt *pstMqtt, const char *server);
 int mqttConnect(Mqtt *pstMqtt);
-void mqttLoop(Mqtt *pstMqtt);
+void mqttRun(Mqtt *pstMqtt);
 
 void mqttSetState(Mqtt *pstMqtt, int state);
 void mqttSetCallback(Mqtt *pstMqtt, uint8_t type, MqttCallback callback);

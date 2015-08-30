@@ -447,7 +447,7 @@ MqttMsg *makeMqttMsg(int msgId, int qos, bool retain, bool dup,
 	return msg;
 }
 
-void mqttLoop(Mqtt *pstMqtt)
+void mqttRun(Mqtt *pstMqtt)
 {
     fd_set fdset;
     struct timeval tv;

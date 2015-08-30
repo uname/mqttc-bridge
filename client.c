@@ -149,9 +149,9 @@ int main(int argc, char **argv)
         exit(1);
     }
     
-    LOG_I("connect %s:%d success", HOST, PORT);
+    LOG_I("connect %s:%d success\n", HOST, PORT);
     
-    mqttLoop(client.mqtt);
+    mqttRun(client.mqtt);
         
     close(client.mqtt->fd);
     
