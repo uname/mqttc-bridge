@@ -1,6 +1,7 @@
 #ifndef __MQTT_H__
 #define __MQTT_H__
 
+#include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -75,7 +76,7 @@ void mqttRead(Mqtt *pstMqtt);
 void mqttSetState(Mqtt *pstMqtt, int state);
 void mqttSetCallback(Mqtt *pstMqtt, uint8_t type, MqttCallback callback);
 
-int easyMqttPublish(Mqtt *pstMqtt, char *topic, char *payload, int qos);
+int easyMqttPublish(Mqtt *pstMqtt, char *topic, char *payload, size_t size, int qos);
 int mqttPublish(Mqtt *pstMqtt, MqttMsg *msg);
 int mqttSubscribe(Mqtt *pstMqtt, const char *topic, unsigned char qos);
 

@@ -426,9 +426,9 @@ int mqttPublish(Mqtt *pstMqtt, MqttMsg *msg)
 	return msg->id;
 }
 
-int easyMqttPublish(Mqtt *pstMqtt, char *topic, char *payload, int qos)
+int easyMqttPublish(Mqtt *pstMqtt, char *topic, char *payload, size_t size, int qos)
 {
-    MqttMsg *msg = makeMqttMsg(0, qos, false, false, topic, strlen(payload), payload);
+    MqttMsg *msg = makeMqttMsg(0, qos, false, false, topic, size, payload);
     return mqttPublish(pstMqtt, msg);
 }
 

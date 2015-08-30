@@ -192,6 +192,17 @@ void clientRun(Client *pstClient)
         {
             mqttRead(pstClient->mqtt);
         }
+        
+        if(FD_ISSET(pstClient->serial->fd, &fdset))
+        {
+            if(serialRead(pstClient->serial) < 1)
+            {
+                LOG_E("read serial error\n");
+                continue;
+            }
+            
+            easyMqttPublish(pstClient->mqtt, "apache001", pstClient->serial->buff, pstClient->serial->bufflen, 0);
+        }
     }
 }
 

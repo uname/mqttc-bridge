@@ -96,6 +96,17 @@ int serialInit(const char *dev, int baud)
     return fd;
 }
 
+int serialRead(Serial *pstSerial)
+{
+    if(pstSerial == NULL)
+    {
+        LOG_E("pstSerial is null\n");
+        return -1;
+    }
+    pstSerial->bufflen = read(pstSerial->fd, pstSerial->buff, MAX_BUFFER_SIZE);
+    return pstSerial->bufflen;
+}
+
 int serialFlush(int fd)
 {
     int ret;

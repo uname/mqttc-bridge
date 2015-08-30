@@ -1,30 +1,27 @@
-#! /usr/bin/env python
-
-#coding=utf-8
+#!/usr/bin/env python
+#-*- coding: utf-8 -*-
 
 import pty
 import os
 import select
 
 def mkpty():
-    #
     master1, slave = pty.openpty()
-    slaveName1 = os.ttyname(slave)
-    master2, slave = pty.openpty()
-    slaveName2 = os.ttyname(slave)
-    print '\nslave device names: ', slaveName1, slaveName2
-    return master1, master2
+    devName = os.ttyname(slave)
+    print "device names -> ", devName
+    return master1, devName
 
 
 if __name__ == "__main__":
 
-    master1, master2 = mkpty()
-    while True:
-        rl, wl, el = select.select([master1,master2], [], [], 1)
-        for master in rl:
-            data = os.read(master, 128)
-            print "read %d data." % len(data)
-            if master==master1:
-                os.write(master2, data)
-            else:
-                os.write(master1, data)
+    master1, devName = mkpty()
+    
+    while 1:
+        rl, wl, el = select.select([master1], [], [], 1)
+        if len(rl) < 1:
+            continue
+            
+        data = os.read(master1, 128)
+        print "buffer size -> %d\n%s" % (len(data), data)
+        os.write(master1, data)
+
