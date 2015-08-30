@@ -126,7 +126,7 @@ static void mqttSendSubscribe(Mqtt *pstMqtt, int msgId, const char *topic, uint8
 	_write_string(&ptr, topic);
 	_write_char(&ptr, qos);
 
-	write(pstMqtt->fd, buffer, ptr-buffer);
+	write(pstMqtt->fd, buffer, ptr - buffer);
 
 	free(buffer);
 }
@@ -337,7 +337,7 @@ static void mqttReaderFeed(Mqtt *pstMqtt, char *buffer, int len)
 	mqttHandlePacket(pstMqtt, header, ptr, remaining_length);
 }
 
-static void mqttRead(Mqtt *pstMqtt)
+void mqttRead(Mqtt *pstMqtt)
 {
     int nread, timeout;
 	char buffer[MQTT_BUFFER_SIZE];
@@ -445,35 +445,4 @@ MqttMsg *makeMqttMsg(int msgId, int qos, bool retain, bool dup,
 	msg->payload = payload;
     
 	return msg;
-}
-
-void mqttRun(Mqtt *pstMqtt)
-{
-    fd_set fdset;
-    struct timeval tv;
-    int ret;
-    int maxFd = pstMqtt->fd;
-    
-    while(1)
-    {
-        FD_ZERO(&fdset);
-        FD_SET(pstMqtt->fd, &fdset);
-        
-        tv.tv_sec = 10;
-        tv.tv_usec = 0;
-        ret = select(maxFd + 1, &fdset, NULL, NULL, &tv);
-        if(ret < 0)
-        {
-            fprintf(stderr, "Select error\n");
-            break;
-        }
-        else if (ret == 0) {
-            continue;
-        }
-        
-        if(FD_ISSET(pstMqtt->fd, &fdset))
-        {
-            mqttRead(pstMqtt);
-        }
-    }
 }

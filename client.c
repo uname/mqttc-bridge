@@ -34,6 +34,21 @@ int initMqtt(Mqtt *pstMqtt)
     return 0;
 }
 
+int initSerial(Serial *pstSerial)
+{
+    pstSerial->dev = strdup(SERIAL_DEV);
+    pstSerial->fd = serialInit(pstSerial->dev, pstSerial->baud);
+    if(pstSerial->fd < 0)
+    {
+        LOG_E("fail to init serial\n");
+        return -1;
+    }
+    
+    LOG_D("init serial ok\n");
+    
+    return 0;
+}
+
 int initClient(Client *pstClient)
 {
     if(pstClient == NULL)
@@ -43,7 +58,9 @@ int initClient(Client *pstClient)
     
     memset(pstClient, 0, sizeof(Client));
     pstClient->mqtt = mqttNew();
+    pstClient->serial = serialNew();
     initMqtt(pstClient->mqtt);
+    initSerial(pstClient->serial);
     
     return 0;
 }
@@ -96,7 +113,12 @@ static void onSuback(Mqtt *pstMqtt, void *data, int msgId)
 static void onMessage(Mqtt *pstMqtt, MqttMsg *message)
 {
     LOG_I("received message: topic=%s, payload=%s\n", message->topic, message->payload);
-    easyMqttPublish(pstMqtt, "apache99", "HiApache!!", 0);
+    if(client.serial != NULL && client.serial->fd > 0)
+    {
+        LOG_D("trans to serial, buff size = %d\n", message->payloadlen);
+        write(client.serial->fd, message->payload, message->payloadlen);
+    }
+    //easyMqttPublish(pstMqtt, "apache99", "HiApache!!", 0);
 }
 
 static void onDisconnect(Mqtt *pstMqtt, void *data, int id)
@@ -125,12 +147,52 @@ static void setMqttCallbacks(Mqtt *pstMqtt)
 		NULL, //onPingresp,
 		onDisconnect
 	};
-	for(i = 0; i < 15; i++) {
+	for(i = 0; i < 15; i++)
+    {
 		type = (i << 4) & 0xf0;
 		mqttSetCallback(pstMqtt, type, callbacks[i]);
 	}
     
     pstMqtt->msgCallback = onMessage;
+}
+
+void clientRun(Client *pstClient)
+{
+    fd_set fdset;
+    struct timeval tv;
+    int ret;
+    int maxfd = pstClient->mqtt->fd > pstClient->serial->fd ? pstClient->mqtt->fd : pstClient->serial->fd;
+    
+    if(pstClient == NULL)
+    {
+        LOG_E("client is null");
+        return;
+    }
+    
+    while(1)
+    {
+        FD_ZERO(&fdset);
+        FD_SET(pstClient->mqtt->fd, &fdset);
+        FD_SET(pstClient->serial->fd, &fdset);
+        
+        tv.tv_sec = 10;
+        tv.tv_usec = 0;
+        ret = select(maxfd + 1, &fdset, NULL, NULL, &tv);
+        if(ret < 0)
+        {
+            LOG_E("select error\n");
+            break;
+        }
+        else if (ret == 0)
+        {
+            continue;
+        }
+        
+        if(FD_ISSET(pstClient->mqtt->fd, &fdset))
+        {
+            mqttRead(pstClient->mqtt);
+        }
+    }
 }
 
 int main(int argc, char **argv)
@@ -151,9 +213,10 @@ int main(int argc, char **argv)
     
     LOG_I("connect %s:%d success\n", HOST, PORT);
     
-    mqttRun(client.mqtt);
+    clientRun(&client);
         
     close(client.mqtt->fd);
+    close(client.serial->fd);
     
     return 0;
 }
