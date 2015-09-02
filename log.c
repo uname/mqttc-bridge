@@ -29,8 +29,7 @@ void mqttLog(LogLevel level, const char *file, const int line, char *format, ...
     char buf[1024];
     char _time[512];
         
-    if(level < logLevel)
-    {
+    if(level < logLevel) {
         return;
     }
     

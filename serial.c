@@ -98,8 +98,7 @@ int serialInit(const char *dev, int baud)
 
 int serialRead(Serial *pstSerial)
 {
-    if(pstSerial == NULL)
-    {
+    if(pstSerial == NULL) {
         LOG_E("pstSerial is null\n");
         return -1;
     }

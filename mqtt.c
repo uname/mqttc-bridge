@@ -19,8 +19,7 @@ Mqtt *mqttNew()
     Mqtt *mqtt;
     
     mqtt = (Mqtt *)malloc(sizeof(Mqtt));
-    if(mqtt == NULL)
-    {
+    if(mqtt == NULL) {
         fprintf(stderr, "FATAL: No enough memory\n");
         exit(1);
     }
@@ -41,8 +40,7 @@ void mqttSetServer(Mqtt *pstMqtt, const char *server)
 
 void mqttSetState(Mqtt *pstMqtt, int state)
 {
-    if(pstMqtt == NULL)
-    {
+    if(pstMqtt == NULL) {
         return;
     }
     pstMqtt->state = state;
@@ -50,13 +48,11 @@ void mqttSetState(Mqtt *pstMqtt, int state)
 
 void mqttSetCallback(Mqtt *pstMqtt, uint8_t type, MqttCallback callback)
 {
-    if(type < 0)
-    {
+    if(type < 0) {
         return;
     }
 	type = (type >> 4) & 0x0F;
-	if(type > 16)
-    {
+	if(type > 16) {
         return;
     }
 	pstMqtt->callbacks[type] = callback;
@@ -82,8 +78,7 @@ static void mqttSendConnect(Mqtt *pstMqtt)
 	flags = FLAG_WILL(flags, 0);
 
 	//length
-	if(pstMqtt->clientId)
-    {
+	if(pstMqtt->clientId) {
 		len = 12 + 2 + strlen(pstMqtt->clientId);
 	}
     
@@ -157,12 +152,10 @@ static void mqttSendPublish(Mqtt *pstMqtt, MqttMsg *msg)
 	_write_header(&ptr, header);
 	_write_remaining_length(&ptr, remaining_length, remaining_count);
 	_write_string(&ptr, msg->topic);
-	if(msg->qos > MQTT_QOS0)
-    {
+	if(msg->qos > MQTT_QOS0) {
 		_write_int(&ptr, msg->id);
 	}
-	if(msg->payload)
-    {
+	if(msg->payload) {
 		_write_payload(&ptr, msg->payload, msg->payloadlen);
 	}
     
@@ -172,18 +165,15 @@ static void mqttSendPublish(Mqtt *pstMqtt, MqttMsg *msg)
 }
 
 static void mqttCallback(Mqtt *pstMqtt, int type, void *data, int id) {
-	if(type < 0)
-    {
+	if(type < 0) {
         return;
     }
 	type = (type >> 4) & 0x0F;
-	if(type > 16)
-    {
+	if(type > 16) {
         return;
     }
 	MqttCallback cb = pstMqtt->callbacks[type];
-	if(cb)
-    {
+	if(cb != NULL) {
         cb(pstMqtt, data, id);
     }
 }
@@ -194,8 +184,7 @@ static void mqttCallback(Mqtt *pstMqtt, int type, void *data, int id) {
 static void mqttHandleConnack(Mqtt *pstMqtt, int rc)
 {
 	mqttCallback(pstMqtt, CONNACK, NULL, rc);
-	if(rc == CONNACK_ACCEPT)
-    {
+	if(rc == CONNACK_ACCEPT) {
 		mqttSetState(pstMqtt, MQTT_STATE_CONNECTED);
 		mqttCallback(pstMqtt, CONNECT, NULL, MQTT_STATE_CONNECTED);
         
@@ -205,8 +194,7 @@ static void mqttHandleConnack(Mqtt *pstMqtt, int rc)
 
 static void mqttHandlePublish(Mqtt *pstMqtt, MqttMsg *msg)
 {
-	switch(msg->qos)
-    {
+	switch(msg->qos) {
     case MQTT_QOS1:
 		//mqtt_puback(mqtt, msg->id);
         break;
@@ -216,21 +204,16 @@ static void mqttHandlePublish(Mqtt *pstMqtt, MqttMsg *msg)
         break;
     }
     
-	if(pstMqtt->msgCallback)
-    {
+	if(pstMqtt->msgCallback) {
         pstMqtt->msgCallback(pstMqtt, msg);
-	}
-    else
-    {
+	} else {
         fprintf(stderr, "No message callback");
     }
     
-    if(msg->topic)
-    {
+    if(msg->topic) {
         free((void *)msg->topic);
 	}
-    if(msg->payload)
-    {
+    if(msg->payload) {
         free((void *)msg->payload);
 	}
     free(msg);
@@ -238,8 +221,7 @@ static void mqttHandlePublish(Mqtt *pstMqtt, MqttMsg *msg)
 
 static void mqttHandlePuback(Mqtt *pstMqtt, int type, int msgId)
 {
-	if(type == PUBREL)
-    {
+	if(type == PUBREL) {
 		//mqtt_pubcomp(mqtt, msgId);
 	}
 	mqttCallback(pstMqtt, type, NULL, msgId);
@@ -328,8 +310,7 @@ static void mqttReaderFeed(Mqtt *pstMqtt, char *buffer, int len)
 	header = _read_header(&ptr);
 	
 	remaining_length = _decode_remaining_length(&ptr, &remaining_count);
-	if((1 + remaining_count + remaining_length) != len )
-    {
+	if((1 + remaining_count + remaining_length) != len ) {
 		fprintf(stderr, "data length error");
 		return;
 	}
@@ -343,29 +324,21 @@ void mqttRead(Mqtt *pstMqtt)
 	char buffer[MQTT_BUFFER_SIZE];
 
     nread = read(pstMqtt->fd, buffer, MQTT_BUFFER_SIZE);
-    if (nread < 0)
-    {
-        if (errno == EAGAIN)
-        {
+    if (nread < 0) {
+        if (errno == EAGAIN) {
             printf("error1\n");
             return;
-        }
-        else
-        {
+        } else {
             printf("error2\n");
 			//mqtt->error = errno;
 			//_mqtt_set_error(mqtt->errstr, "socket error: %d.", errno);
         }
-    }
-    else if (nread == 0)
-    {
+    } else if (nread == 0) {
         //mqtt_disconnect(mqtt);
         //printf("error3\n");
 		//timeout = (random() % 300) * 1000;
 		//aeCreateTimeEvent(el, timeout, _mqtt_reconnect, mqtt, NULL);
-    }
-    else
-    {
+    } else {
         mqttReaderFeed(pstMqtt, buffer, nread);
     }
 }
@@ -377,21 +350,18 @@ int mqttConnect(Mqtt *pstMqtt)
     memset(&sa, 0, sizeof(sa));
     sa.sin_family = AF_INET;
     sa.sin_port = htons(pstMqtt->port);
-    if(netutil_resolve(&sa, pstMqtt->server) != 0)
-    {
+    if(netutil_resolve(&sa, pstMqtt->server) != 0) {
         fprintf(stderr, "FATAL: Convert IP error\n");
         exit(1);
     }
     
     pstMqtt->fd = socket(AF_INET, SOCK_STREAM, 0);
-    if(pstMqtt->fd == -1)
-    {
+    if(pstMqtt->fd == -1) {
         fprintf(stderr, "Create client socket error\n");
         return -1;
     }
     
-    if(connect(pstMqtt->fd, (struct sockaddr *) &sa, sizeof(sa)) == -1)
-    {
+    if(connect(pstMqtt->fd, (struct sockaddr *) &sa, sizeof(sa)) == -1) {
         fprintf(stderr, "Connect error\n");
         return -1;
     }
@@ -416,8 +386,7 @@ int mqttSubscribe(Mqtt *pstMqtt, const char *topic, unsigned char qos)
 //PUBLISH
 int mqttPublish(Mqtt *pstMqtt, MqttMsg *msg)
 {
-	if(msg->id == 0)
-    {
+	if(msg->id == 0) {
 		msg->id = pstMqtt->msgId++;
 	}
 	mqttSendPublish(pstMqtt, msg);

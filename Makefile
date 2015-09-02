@@ -1,10 +1,12 @@
-#
-OBJ=client.o
-TARGET=main
+# mqttc-bridge Makefile
+# uname.github.com/mqtt-bridge
+
+OBJ:=$(patsubst %.c,%.o,$(wildcard *.c))
+TARGET=mqtt-bridge
 CC=gcc
 
-$(TARGET):$(OBJ)
-	$(CC) client.c net_utils.c mqtt.c packet.c log.c serial.c -o test
+$(TARGET): $(OBJ)
+	$(CC) -o $@ $(OBJ)
 
 clean:
-	-rm -rf $(OBJ) $(TARGET) test
+	-rm -rf $(OBJ) $(TARGET)
