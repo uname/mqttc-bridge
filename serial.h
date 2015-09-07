@@ -1,7 +1,8 @@
 #ifndef __SERIAL_H__
 #define __SERIAL_H__
 
-#define DEFAULT_BAUD        9600
+#include "config.h"
+
 #define MAX_BUFFER_SIZE     256
 
 typedef struct tagSerial {

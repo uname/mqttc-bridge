@@ -153,7 +153,7 @@ static void setMqttCallbacks(Mqtt *pstMqtt)
     pstMqtt->msgCallback = onMessage;
 }
 
-void clientRun(Client *pstClient)
+void clientLoop(Client *pstClient)
 {
     fd_set fdset;
     struct timeval tv;
@@ -195,7 +195,7 @@ void clientRun(Client *pstClient)
     }
 }
 
-int main(int argc, char **argv)
+int clientRun()
 {
     LOG_SET_LEVEL(LOG_DEBUG);
     
@@ -212,7 +212,7 @@ int main(int argc, char **argv)
     
     LOG_I("connect %s:%d success\n", HOST, PORT);
     
-    clientRun(&client);
+    clientLoop(&client);
         
     close(client.mqtt->fd);
     close(client.serial->fd);

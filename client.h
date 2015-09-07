@@ -10,6 +10,7 @@ typedef struct tagClient {
 
 } Client;
 
+int clientRun();
 int initClient(Client *pstClient);
 int initMqtt(Mqtt *pstMqtt);
 int initSerial(Serial *pstSerial);
