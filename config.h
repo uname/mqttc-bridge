@@ -8,6 +8,6 @@
 #define TOPIC       "uname.drinktip"         
 #define HOST        "iot.eclipse.org"
 #define PORT        1883
-#define SERIAL_DEV  "/dev/pts/3"
+#define SERIAL_DEV  "/dev/ttyATH0"
 
 #endif

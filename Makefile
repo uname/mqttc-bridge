@@ -3,9 +3,9 @@
 
 OBJ:=$(patsubst %.c,%.o,$(wildcard *.c))
 TARGET=mqtt-bridge
-CC=gcc
+CC=mips-openwrt-linux-gcc
 
-$(TARGET): $(OBJ) *.h
+$(TARGET): $(OBJ)
 	$(CC) -o $@ $(OBJ)
 
 clean:

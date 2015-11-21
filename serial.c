@@ -34,6 +34,7 @@ int serialInit(const char *dev, int baud)
         return -1;
     }
     
+    LOG_I("init serial device %s ...\n", dev);
     fd = open(dev, O_RDWR | O_NONBLOCK );
     
     if (fd == -1)  {
