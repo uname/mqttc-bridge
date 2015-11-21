@@ -190,7 +190,8 @@ void clientLoop(Client *pstClient)
                 continue;
             }
             
-            easyMqttPublish(pstClient->mqtt, "apache001", pstClient->serial->buff, pstClient->serial->bufflen, 0);
+            // currently, just ignore the message from serial device
+            //easyMqttPublish(pstClient->mqtt, "apache001", pstClient->serial->buff, pstClient->serial->bufflen, 0);
         }
     }
 }

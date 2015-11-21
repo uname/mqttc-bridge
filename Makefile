@@ -5,7 +5,7 @@ OBJ:=$(patsubst %.c,%.o,$(wildcard *.c))
 TARGET=mqtt-bridge
 CC=gcc
 
-$(TARGET): $(OBJ)
+$(TARGET): $(OBJ) *.h
 	$(CC) -o $@ $(OBJ)
 
 clean:

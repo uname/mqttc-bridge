@@ -5,9 +5,9 @@
 #define DEFAULT_BAUD        9600
 
 #define QOS         1
-#define TOPIC       "uname.github.io"         
+#define TOPIC       "uname.drinktip"         
 #define HOST        "iot.eclipse.org"
 #define PORT        1883
-#define SERIAL_DEV  "/dev/pts/18"
+#define SERIAL_DEV  "/dev/pts/3"
 
 #endif

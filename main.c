@@ -12,7 +12,7 @@
 typedef struct tagOptArgs {
 	int baud;
 	char *dev;
-	char *dev_topic;
+	char *topic;
 	char *remote_topic;
 } OptArgs;
 
@@ -22,7 +22,7 @@ static char *optstr = "b:d:t:vh";
 static struct option longopts[] = {
 	{"baud",      required_argument, NULL, 'b'},
 	{"device",    required_argument, NULL, 'd'},
-	{"dev-topic", required_argument, NULL, 't'},
+	{"topic",     required_argument, NULL, 't'},
 	{"version",   no_argument,       NULL, 'v'},
 	{"help",      no_argument,       NULL, 'h'},
 	{NULL,        no_argument,       NULL, 0}
@@ -35,7 +35,13 @@ void showVersion()
 
 void showHelp()
 {
-	 printf("Usage: mqtt-bridge [OPTIONS] \n");
+	 printf("Usage: mqtt-bridge [OPTIONS] \n"
+			"Options:\n"
+			"    -b, --baud     set serial baud\n"
+			"    -d, --device   set serial device\n"
+			"    -t, --topic    set mqtt subscibe topic\n"
+			"    -v, --version  print version\n"
+			"    -h, --help     print this help text\n\n");
 }
 
 int getOptions(int argc, char *argv[])
@@ -55,7 +61,7 @@ int getOptions(int argc, char *argv[])
 			break;
 
 		case 't':
-			optargs.dev_topic = strdup(optarg);
+			optargs.topic = strdup(optarg);
 			break;
 
 		case 'v':
@@ -76,7 +82,7 @@ int getOptions(int argc, char *argv[])
 		return -1;
 	}
 
-	if(optargs.dev_topic == NULL) {
+	if(optargs.topic == NULL) {
 		fprintf(stderr, "device topic to be discribed is required!\n");
 		return -1;
 	}

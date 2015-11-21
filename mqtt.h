@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <unistd.h>
 
 #define MQTT_CALLBACK_NUM  16
 #define MQTT_PROTO_MAJOR   3

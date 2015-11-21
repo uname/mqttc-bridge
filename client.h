@@ -3,6 +3,7 @@
 
 #include "mqtt.h"
 #include "serial.h"
+#include <unistd.h>
 
 typedef struct tagClient {
     Serial *serial;
