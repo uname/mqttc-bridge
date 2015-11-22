@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/time.h> 
 
 static Client client;
 
@@ -110,6 +111,20 @@ static void onSuback(Mqtt *pstMqtt, void *data, int msgId)
 	LOG_D("received suback: msgId=%d\n", msgId);
 }
 
+static void onPingreq(Mqtt *pstMqtt, void *data, int msgId)
+{
+    (void)pstMqtt;
+	(void)data;
+	LOG_D("on ping req\n");
+}
+
+static void onPingresp(Mqtt *pstMqtt, void *data, int msgId)
+{
+    (void)pstMqtt;
+	(void)data;
+	LOG_D("on ping response\n");
+}
+
 static void onMessage(Mqtt *pstMqtt, MqttMsg *message)
 {
     LOG_I("received message: topic=%s, payload=%s\n", message->topic, message->payload);
@@ -141,8 +156,8 @@ static void setMqttCallbacks(Mqtt *pstMqtt)
 		onSuback,
 		NULL, //onUnsubscribe,
 		NULL, //onUnsuback,
-		NULL, //onPingreq,
-		NULL, //onPingresp,
+		onPingreq,
+		onPingresp,
 		onDisconnect
 	};
 	for(i = 0; i < 15; i++) {
@@ -157,6 +172,8 @@ void clientLoop(Client *pstClient)
 {
     fd_set fdset;
     struct timeval tv;
+	struct timeval tick;
+    time_t last_sec = 0;
     int ret;
     int maxfd = pstClient->mqtt->fd > pstClient->serial->fd ? pstClient->mqtt->fd : pstClient->serial->fd;
     
@@ -164,8 +181,17 @@ void clientLoop(Client *pstClient)
         LOG_E("client is null");
         return;
     }
-    
+   
+    gettimeofday(&tick, NULL);
+	last_sec = tick.tv_sec;
+
     while(1) {
+        gettimeofday(&tick, NULL);
+        if(tick.tv_sec - last_sec > 6) {
+            mqttKeepalive(pstClient->mqtt);
+            last_sec = tick.tv_sec;
+        }
+
         FD_ZERO(&fdset);
         FD_SET(pstClient->mqtt->fd, &fdset);
         FD_SET(pstClient->serial->fd, &fdset);

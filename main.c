@@ -76,7 +76,7 @@ int getOptions(int argc, char *argv[])
 			break;
 		}
 	}
-
+#if 0
 	if(optargs.dev == NULL) {
 		fprintf(stderr, "serial device is required!\n");
 		return -1;
@@ -86,7 +86,7 @@ int getOptions(int argc, char *argv[])
 		fprintf(stderr, "device topic to be discribed is required!\n");
 		return -1;
 	}
-
+#endif
 	return 0;
 
 }

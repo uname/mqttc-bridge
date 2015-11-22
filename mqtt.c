@@ -33,6 +33,21 @@ Mqtt *mqttNew()
     return mqtt;
 }
 
+
+static void mqttCallback(Mqtt *pstMqtt, int type, void *data, int id) {
+	if(type < 0) {
+        return;
+    }
+	type = (type >> 4) & 0x0F;
+	if(type > 16) {
+        return;
+    }
+	MqttCallback cb = pstMqtt->callbacks[type];
+	if(cb != NULL) {
+        cb(pstMqtt, data, id);
+    }
+}
+
 void mqttSetServer(Mqtt *pstMqtt, const char *server)
 {
 	pstMqtt->server = strdup(server);
@@ -58,6 +73,22 @@ void mqttSetCallback(Mqtt *pstMqtt, uint8_t type, MqttCallback callback)
 	pstMqtt->callbacks[type] = callback;
 }
 
+static void mqttSendPing(Mqtt *pstMqtt)
+{
+    char buff[2] = {PINGREQ, 0};
+    write(pstMqtt->fd, buff, sizeof(buff));
+	mqttCallback(pstMqtt, PINGREQ, NULL, 0);
+}
+
+static void mqttHandlePingresp(Mqtt *pstMqtt)
+{
+   mqttCallback(pstMqtt, PINGRESP, NULL, 0); 
+}
+
+void mqttKeepalive(Mqtt *pstMqtt)
+{
+    mqttSendPing(pstMqtt); 
+}
 
 static void mqttSendConnect(Mqtt *pstMqtt)
 {
@@ -164,19 +195,6 @@ static void mqttSendPublish(Mqtt *pstMqtt, MqttMsg *msg)
 	free(buffer);
 }
 
-static void mqttCallback(Mqtt *pstMqtt, int type, void *data, int id) {
-	if(type < 0) {
-        return;
-    }
-	type = (type >> 4) & 0x0F;
-	if(type > 16) {
-        return;
-    }
-	MqttCallback cb = pstMqtt->callbacks[type];
-	if(cb != NULL) {
-        cb(pstMqtt, data, id);
-    }
-}
 
 /**
  * 处理服务器的连接回包
@@ -290,11 +308,12 @@ static void mqttHandlePacket(Mqtt *mqtt, uint8_t header, char *buffer, int bufle
 		msgId = _read_int(&buffer);
 		_mqtt_handle_unsuback(mqtt, msgId);
 		break;
-        
+    
+	*/	
 	case PINGRESP:
-		_mqtt_handle_pingresp(mqtt);
+		mqttHandlePingresp(mqtt);
 		break;
-        
+    /*   
 	default:
 		_mqtt_set_error(mqtt->errstr, "badheader: %d", type); */
 	}
