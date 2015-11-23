@@ -9,5 +9,8 @@
 #define HOST        "iot.eclipse.org"
 #define PORT        1883
 #define SERIAL_DEV  "/dev/ttyATH0"
+//#define SERIAL_DEV  "/dev/pts/6"
+
+#define START_CODE  "APACHE"
 
 #endif

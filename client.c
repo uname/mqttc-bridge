@@ -185,6 +185,8 @@ void clientLoop(Client *pstClient)
     gettimeofday(&tick, NULL);
 	last_sec = tick.tv_sec;
 
+	write(pstClient->serial->fd, START_CODE, strlen(START_CODE));
+
     while(1) {
         gettimeofday(&tick, NULL);
         if(tick.tv_sec - last_sec > 6) {
